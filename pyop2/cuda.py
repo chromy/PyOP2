@@ -53,7 +53,11 @@ class Kernel(op2.Kernel):
         if self._initialized:
             return
         op2.Kernel.__init__(self, code, name, opts, include_dirs)
-        self._code = self.instrument()
+        print 1
+        print self._code
+        #self._code = self.instrument()
+        #print 2
+        #print self._code
 
     def instrument(self):
         class Instrument(c_ast.NodeVisitor):
