@@ -762,6 +762,11 @@ class JITModule(base.JITModule):
             argtypes += "PPPPP"  # blkmap, offset, nelems, nthrcol, thrcol
             argtypes += inttype  # number of colours in the block
 
+        # HACK: remove dobule initialisation
+        import re
+        src = re.sub(r"(    double \*ind_arg1_vec\[\d+\];\n)"*2, r"\1", src)
+        # END HACK
+        print 'FOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
         self._module = SourceModule(src, options=compiler_opts)
         self._dump_generated_code(src, ext="cu")
 
