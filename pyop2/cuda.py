@@ -53,11 +53,6 @@ class Kernel(op2.Kernel):
         if self._initialized:
             return
         op2.Kernel.__init__(self, code, name, opts, include_dirs)
-        print 1
-        print self._code
-        #self._code = self.instrument()
-        #print 2
-        #print self._code
 
     def instrument(self):
         class Instrument(c_ast.NodeVisitor):
@@ -744,7 +739,13 @@ class JITModule(base.JITModule):
 
         d = {'parloop': self._parloop,
              'launch': self._config,
-             'constants': Const._definitions()}
+             'constants': Const._definitions(),
+             'threads_per_local_array': 12,
+             }
+
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        print d
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
         if self._parloop._is_direct:
             src = _direct_loop_template.render(d).encode('ascii')
