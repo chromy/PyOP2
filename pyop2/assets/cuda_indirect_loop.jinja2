@@ -128,7 +128,12 @@ __global__ void {{ parloop._stub_name }} (
     {%- set _nelems = 'nelem' -%}
     {% endif %}
 
-    for ( int idx = threadIdx.x; idx < {{_nelems}}; idx += blockDim.x ) {
+    for ( int idx = threadIdx.x/{{threads_per_local_array}}; idx < {{_nelems}}; idx += blockDim.x/{{threads_per_local_array}} ) {
+        {%- if threads_per_local_array > 1 %}
+        if (threadIdx.x >= blockDim.x - blockDim.x % {{threads_per_local_array}}) {
+            continue;
+        }
+        {%- endif %}
         {% if parloop._all_inc_indirect_dat_args -%}
         int col2 = -1;
         if ( idx < nelem ) {
@@ -160,9 +165,37 @@ __global__ void {{ parloop._stub_name }} (
                 {%- endfor %}
             }
             {%- endfor %}
+
+            {%- set total_num_entries = parloop._it_space.extents_product %}
+            // Threads per local array: {{ threads_per_local_array }}
+            // Total number of entries: {{ total_num_entries }}
+
+            {%- if threads_per_local_array == -1 %}
             {%- for r in parloop._it_space.extents %}
             for ( int i{{loop.index0}} = 0; i{{loop.index0}} < {{r}}; ++i{{loop.index0}} ) {
             {%- endfor %}
+            {%- elif total_num_entries == threads_per_local_array %}
+            {%- set num_entries = 1 %}
+            {%- for r in parloop._it_space.extents %}
+            {%- set num_entries = num_entries * r %}
+            int i{{loop.index0}} = threadIdx.x % {{ num_entries }};
+            {%- endfor %}
+            {%- else %}
+            int local_thread_id = threadIdx.x % {{ threads_per_local_array }};
+            // Each thread gets a chunk of length total_num_entries / threads_per_local_array.
+            {%- set chunk_size = (total_num_entries / threads_per_local_array)|round(0, 'ceil')|int %}
+            for (int e={{ chunk_size }} * local_thread_id; e<{{ chunk_size }} * (local_thread_id+1); e++) {
+                {%- if threads_per_local_array > total_num_entries or total_num_entries % threads_per_local_array != 0 %}
+                if (e >= {{ total_num_entries }}) {
+                    continue;
+                }
+                {%- endif %}
+                {%- set num_entries = 1 %}
+                {%- for r in parloop._it_space.extents %}
+                {%- set num_entries = num_entries * r %}
+                int i{{loop.index0}} = e % {{ num_entries }};
+                {%- endfor %}
+            {%- endif %}
 
             {{parloop.kernel.name}}(
                 {%- set comma = joiner(",") -%}
@@ -175,9 +208,14 @@ __global__ void {{ parloop._stub_name }} (
                 {% endfor -%}
                 );
 
-            {%- for r in parloop._it_space._extents %}
+            {%- if threads_per_local_array == -1 %}
+            {%- for r in parloop._it_space.extents %}
             }
             {%- endfor %}
+            {%- elif total_num_entries == threads_per_local_array %}
+            {%- else %}
+            }
+            {%- endif %}
         {%- if parloop._all_inc_indirect_dat_args %}
             col2 = thrcol[idx + offset_b];
         }

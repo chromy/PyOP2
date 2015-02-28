@@ -53,11 +53,6 @@ class Kernel(op2.Kernel):
         if self._initialized:
             return
         op2.Kernel.__init__(self, code, name, opts, include_dirs)
-        print 1
-        print self._code
-        #self._code = self.instrument()
-        #print 2
-        #print self._code
 
     def instrument(self):
         class Instrument(c_ast.NodeVisitor):
@@ -300,9 +295,11 @@ class Mat(DeviceDataMixin, op2.Mat):
         self._assembled = True
         mod, sfun, vfun = Mat._lma2csr_cache.get(self.dtype,
                                                  (None, None, None))
+
         if mod is None:
             d = {'type': self.ctype}
             src = _matrix_support_template.render(d).encode('ascii')
+            print 1, src
             compiler_opts = ['-m64', '-Xptxas', '-dlcm=ca',
                              '-Xptxas=-v', '-O3', '-use_fast_math', '-DNVCC']
             mod = SourceModule(src, options=compiler_opts)
@@ -757,7 +754,14 @@ class JITModule(base.JITModule):
 
         d = {'parloop': self._parloop,
              'launch': self._config,
-             'constants': Const._definitions()}
+             'constants': Const._definitions(),
+             #'threads_per_local_array': min(512, self._parloop._it_space.extents_product),
+             'threads_per_local_array': 1,
+             }
+
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        print d
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
         if self._parloop._is_direct:
             src = _direct_loop_template.render(d).encode('ascii')
@@ -784,12 +788,18 @@ class JITModule(base.JITModule):
         src = re.sub(r"(    double \*ind_arg1_vec\[\d+\];\n)"*2, r"\1", src)
         # END HACK
         print 'FOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-        self._module = SourceModule(src, options=compiler_opts)
+        cache_dir = None
+        self._module = SourceModule(src, options=compiler_opts, cache_dir=cache_dir)
+
         self._dump_generated_code(src, ext="cu")
 
         # Upload Const data.
         for c in Const._definitions():
             c._to_device(self._module)
+
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        print 'argtypes', argtypes
+        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
         self._fun = self._module.get_function(self._parloop._stub_name)
         self._fun.prepare(argtypes)
@@ -802,6 +812,12 @@ class JITModule(base.JITModule):
     @timed_function("ParLoop kernel")
     def __call__(self, grid, block, stream, *args, **kwargs):
         if configuration["profiling"]:
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            print 'grid:', grid
+            print 'block', block
+            print 'stream:', stream
+            print 'shared_size:', kwargs['shared_size']
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             t_ = self.compile().prepared_timed_call(grid, block, *args, **kwargs)()
             Timer("CUDA kernel").add(t_)
         else:
@@ -869,6 +885,9 @@ class ParLoop(op2.ParLoop):
             # It would be much nicer if we could tell op_plan_core "I
             # have X bytes shared memory"
             part_size = (_AVAILABLE_SHARED_MEMORY / (64 * maxbytes)) * 64
+            print 'maxbytes:', maxbytes
+            print 'part_size:', part_size
+            print '_AVAILABLE_SHARED_MEMORY:', _AVAILABLE_SHARED_MEMORY
             _plan = Plan(part,
                          *self._unwound_args,
                          partition_size=part_size)
