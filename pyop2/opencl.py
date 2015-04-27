@@ -739,7 +739,7 @@ class ParLoop(device.ParLoop):
         for arg in self.args:
             if arg.access is not READ:
                 arg.data.state = DeviceDataMixin.DEVICE
-        self.maybe_set_dat_dirty()
+        self.update_arg_data_state()
 
         for a in self._all_global_reduction_args:
             a.data._post_kernel_reduction_task(conf['work_group_count'], a.access)
