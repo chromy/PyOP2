@@ -83,7 +83,8 @@ class Arg(op2.Arg):
         if self._is_mat:
             rmap, cmap = self.map
             ridx, cidx = self.idx
-            rmult, cmult = self.data.dims
+            print self.data.dims
+            rmult, cmult = self.data.dims[0][0]
             esize = rmult * cmult
             size = esize * rmap.arity * cmap.arity
             if self._flatten and esize > 1:
@@ -322,10 +323,10 @@ class Mat(DeviceDataMixin, op2.Mat):
                                 np.int32(nelems)])
                 fun = sfun
             else:
-                arglist.extend([np.int32(self.dims[0]),
+                arglist.extend([np.int32(self.dims[0][0][0]),
                                 colmap._device_values.gpudata,
                                 np.int32(colmap.arity),
-                                np.int32(self.dims[1]),
+                                np.int32(self.dims[0][0][1]),
                                 np.int32(nelems)])
                 fun = vfun
             _stream.synchronize()
