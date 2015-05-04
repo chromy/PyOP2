@@ -249,6 +249,16 @@ class Mat(DeviceDataMixin, op2.Mat):
                     gpuarray.zeros(shape=nentries, dtype=self.dtype))
         return getattr(self, '__lmadata')
 
+    def duplicate(self):
+        return Mat(self.sparsity, self.dtype, self.name)
+        # other = Mat(self.sparsity)
+        # # ensure outstanding par loops have been carried out
+        # base._trace.evaluate(set([self]), set([self]))
+        # # or whatever the appropriate pycuda call is
+        # from IPython import embed; embed()
+        # self._csrdata.copy(other._csrdata)
+        # return other
+
     def _lmaoffset(self, iterset):
         offset = 0
         size = self.sparsity.maps[0][0].toset.size
