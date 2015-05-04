@@ -1392,6 +1392,14 @@ class IterationSpace(object):
         return self._extents
 
     @cached_property
+    def extents_product(self):
+        """Products of extents of the IterationSpace within each item of ``iterset``"""
+        total = 1
+        for r in self.extents:
+            total *= r
+        return total
+
+    @cached_property
     def name(self):
         """The name of the :class:`Set` over which this IterationSpace is
         defined."""
