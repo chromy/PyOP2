@@ -151,6 +151,7 @@ class ObjectCached(object):
         try:
             cache = cache_obj._cache
         except AttributeError:
+            import IPython; IPython.embed()
             raise RuntimeError("Provided caching object does not have a '_cache' attribute.")
 
         # OK, we have a cache, let's go ahead and try and find our
@@ -258,6 +259,7 @@ class DiskCached(Cached):
         # Only rank 0 looks on disk
         if c.rank == 0:
             filepath = os.path.join(cls._cachedir, key)
+            print filepath
             val = None
             if os.path.exists(filepath):
                 try:
@@ -274,7 +276,6 @@ class DiskCached(Cached):
 
         if val is None:
             raise KeyError("Object with key %s not found in %s" % (key, cls._cachedir))
-
         # Get the actual object
         val = cPickle.loads(val)
 
