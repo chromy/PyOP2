@@ -3782,6 +3782,12 @@ class JITModule(Cached):
         more details.
 
         """
+        import os
+        if 'PYOP2_DUMP_CODE_PATH' in os.environ:
+            path = os.environ['PYOP2_DUMP_CODE_PATH']
+            with open(path, "w") as f:
+                f.write(src)
+
         if configuration['dump_gencode']:
             import os
             import hashlib
