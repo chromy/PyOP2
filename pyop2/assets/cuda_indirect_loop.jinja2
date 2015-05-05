@@ -191,9 +191,15 @@ __global__ void {{ parloop._stub_name }} (
                 }
                 {%- endif %}
                 {%- set num_entries = 1 %}
-                {%- for r in parloop._it_space.extents %}
+                {%- for r in parloop._it_space.extents|reverse %}
+                {%- if loop.first %}
+                int i{{loop.length - loop.index0}} = e % {{ r }};
+                {%- elif loop.last %}
+                int i{{loop.length - loop.index0}} = e / {{num_entries}};
+                {%- else %}
+                int i{{loop.length - loop.index0}} = (e / {{num_entries}}) % {{ r }};
+                {% endif %}
                 {%- set num_entries = num_entries * r %}
-                int i{{loop.index0}} = e % {{ num_entries }};
                 {%- endfor %}
             {%- endif %}
 

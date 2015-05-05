@@ -755,8 +755,8 @@ class JITModule(base.JITModule):
         d = {'parloop': self._parloop,
              'launch': self._config,
              'constants': Const._definitions(),
-             #'threads_per_local_array': min(512, self._parloop._it_space.extents_product),
-             'threads_per_local_array': 1,
+             #'threads_per_local_array': min(128, self._parloop._it_space.extents_product),
+             'threads_per_local_array': 2,
              }
 
         print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -788,7 +788,9 @@ class JITModule(base.JITModule):
         src = re.sub(r"(    double \*ind_arg1_vec\[\d+\];\n)"*2, r"\1", src)
         # END HACK
         print 'FOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+
         cache_dir = None
+        print src
         self._module = SourceModule(src, options=compiler_opts, cache_dir=cache_dir)
 
         self._dump_generated_code(src, ext="cu")
