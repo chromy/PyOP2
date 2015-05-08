@@ -731,7 +731,9 @@ class JITModule(base.JITModule):
             raise RuntimeError("JITModule has no parloop associated with it, should never happen")
 
         compiler_opts = ['-m64', '-Xptxas', '-dlcm=ca',
-                         '-Xptxas=-v', '-O3', '-use_fast_math', '-DNVCC']
+                         '-Xptxas=-v', '-O3', '-use_fast_math', '-DNVCC', '-v',
+                         '--maxrregcount=128',
+                        ]
         inttype = np.dtype('int32').char
         argtypes = inttype      # set size
         argtypes += inttype  # offset
